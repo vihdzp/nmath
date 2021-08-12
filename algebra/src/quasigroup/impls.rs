@@ -1,22 +1,31 @@
-use super::Quasigroup;
+use super::{LeftQuasigroup, RightQuasigroup};
 use crate::ops::{Add, Bws, Sub};
 
 /// Declares a primitive type as a quasigroup under a given commmutative
 /// operation, its both-sided "inverse", and the backwards of that inverse.
 macro_rules! impl_quasi {
     ($type:ty, $op:ty, $inv:ty) => {
-        impl Quasigroup<$op> for $type {
-            type LInv = $inv;
+        impl LeftQuasigroup<$op> for $type {
+            type LInv = Bws<$inv>;
+        }
+
+        impl RightQuasigroup<$op> for $type {
             type RInv = $inv;
         }
 
-        impl Quasigroup<$inv> for $type {
-            type LInv = Bws<$inv>;
+        impl LeftQuasigroup<$inv> for $type {
+            type LInv = $inv;
+        }
+
+        impl RightQuasigroup<$inv> for $type {
             type RInv = $op;
         }
 
-        impl Quasigroup<Bws<$inv>> for $type {
+        impl LeftQuasigroup<Bws<$inv>> for $type {
             type LInv = $op;
+        }
+
+        impl RightQuasigroup<Bws<$inv>> for $type {
             type RInv = Bws<$inv>;
         }
     };
