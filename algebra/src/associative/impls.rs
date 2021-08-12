@@ -1,6 +1,6 @@
 //! Implements the appropriate semigroup traits for all primitives.
 
-use super::Associative;
+use crate::impl_associativity;
 use crate::ops::{Add, Mul};
 
 /// Implements the semigroup trait under addition and multiplication for a
@@ -8,8 +8,8 @@ use crate::ops::{Add, Mul};
 macro_rules! impl_arith_sg {
     ($($type:ty),*) => {
         $(
-            impl Associative<Add> for $type {}
-            impl Associative<Mul> for $type {}
+            impl_associativity!(Add: $type);
+            impl_associativity!(Mul: $type);
         )*
     };
 }

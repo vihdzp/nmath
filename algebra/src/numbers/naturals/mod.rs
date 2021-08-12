@@ -18,13 +18,7 @@ impl<Rhs, Output, T> NaturalsAux<Rhs, Output> for T where
 {
 }
 
-pub trait Naturals:
-    CommutativeMonoid<Add>
-    + CommutativeMonoid<Mul>
-    //+ ArithOp<Self::Word, Output = Self>
-   // + ArithOpAssign<Self::Word>
-    + From<Self::Word>
-{
+pub trait Naturals: CommutativeMonoid<Add> + CommutativeMonoid<Mul> + From<Self::Word> {
     /// The preferred primitive naturals to interface with these numbers.
     type Word: PrimitiveNaturals; //+ ArithOp<Self, Output = Self>;
 
@@ -36,6 +30,10 @@ pub trait Naturals:
     /// Returns the one element.
     fn one() -> Self {
         <Self as Unital<Mul>>::id()
+    }
+
+    fn is_zero(&self) -> bool {
+        todo!()
     }
 
     /// Compares `self` to a primitive.
@@ -80,19 +78,19 @@ pub trait Naturals:
     }
 
     /// Adds two values.
-    fn add(&self,rhs:&Self) -> Self {
+    fn add(&self, rhs: &Self) -> Self {
         <Self as Magma<Add>>::op(self, rhs)
     }
 
     /// Subtracts two values.
-    fn sub(&self, _rhs:&Self) -> Self {
+    fn sub(&self, _rhs: &Self) -> Self {
         todo!()
     }
 
-    fn mul_assign(&mut self, _rhs:&Self){}
+    fn mul_assign(&mut self, _rhs: &Self) {}
 
     /// Divides `self` by a primitive.
     fn div_assign_prim<N: Into<Self::Word>>(&mut self, _n: N) {
-     todo!()
+        todo!()
     }
 }

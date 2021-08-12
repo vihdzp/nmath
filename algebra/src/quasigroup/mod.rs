@@ -7,7 +7,7 @@ pub mod impls;
 /// together with a left division operator.
 pub trait LeftQuasigroup<Op: BinOpMarker>: Magma<Op> + Magma<Self::LInv> {
     /// The operator corresponding to left division. It must always be true that
-    /// `a Op (a LInv b) = b`.
+    /// `a op (a LInv b) = b`.
     type LInv: BinOpMarker;
 
     /// An alias for the main operation of a [`LeftQuasigroup`].
@@ -55,7 +55,7 @@ pub trait LeftQuasigroup<Op: BinOpMarker>: Magma<Op> + Magma<Self::LInv> {
 /// [`Magma`] together with a right division operator.
 pub trait RightQuasigroup<Op: BinOpMarker>: Magma<Op> + Magma<Self::RInv> {
     /// The operator corresponding to right division. It must always be true
-    /// that `(b RInv a) Op a = b`.
+    /// that `(b RInv a) op a = b`.
     type RInv: BinOpMarker;
 
     /// An alias for the main operation of a [`RightQuasigroup`].
@@ -88,7 +88,7 @@ pub trait RightQuasigroup<Op: BinOpMarker>: Magma<Op> + Magma<Self::RInv> {
         <Self as Magma<Self::RInv>>::op_assign_rhs(self, rhs)
     }
 
-    /// Tests whether `(b RInv a) Op a = b` for some values.
+    /// Tests whether `(b RInv a) op a = b` for some values.
     fn test_right_div(&self, rhs: &Self) -> bool
     where
         Self: PartialEq,

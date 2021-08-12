@@ -2,14 +2,15 @@ use super::*;
 
 /// Implements `BinOp<op>` for a given operation.
 macro_rules! impl_bin_op {
-    ($($op:ident, $fn:expr, { $($type:ty),* });*) => {
+    ($($op:ident, |$var_x:ident, $var_y:ident| $fn:expr, { $($type:ty),* });*) => {
         $($(
             impl BinOp<$op> for $type {
                 type Output = Self;
                 type Err = ();
 
                 fn bin_op(&self, rhs: &Self) -> Result<Self, ()> {
-                    ($fn)(*self, *rhs)
+                    let f = |$var_x: Self, $var_y: Self| $fn;
+                    f(*self, *rhs)
                 }
             }
         )*)*
@@ -17,29 +18,29 @@ macro_rules! impl_bin_op {
 }
 
 impl_bin_op!(
-    Add, |x: Self, y: Self| x.checked_add(y).ok_or(()),
+    Add, |x, y| x.checked_add(y).ok_or(()),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    Add, |x: Self, y: Self| Ok(x + y),
+    Add, |x, y| Ok(x + y),
         {f32, f64};
-    Sub, |x: Self, y: Self| x.checked_sub(y).ok_or(()),
+    Sub, |x, y| x.checked_sub(y).ok_or(()),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    Sub, |x: Self, y: Self| Ok(x - y),
+    Sub, |x, y| Ok(x - y),
         {f32, f64};
-    Mul, |x: Self, y: Self| x.checked_mul(y).ok_or(()),
+    Mul, |x, y| x.checked_mul(y).ok_or(()),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    Mul, |x: Self, y: Self| Ok(x * y),
+    Mul, |x, y| Ok(x * y),
         {f32, f64};
-    Div, |x: Self, y: Self| x.checked_div(y).ok_or(()),
+    Div, |x, y| x.checked_div(y).ok_or(()),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    Div, |x: Self, y: Self| Ok(x / y),
+    Div, |x, y| Ok(x / y),
         {f32, f64};
-    Rem, |x: Self, y: Self| x.checked_rem(y).ok_or(()),
+    Rem, |x, y| x.checked_rem(y).ok_or(()),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    BitAnd, |x: Self, y: Self| Ok(x & y),
+    BitAnd, |x, y| Ok(x & y),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool};
-    BitOr, |x: Self, y: Self| Ok(x | y),
+    BitOr, |x, y| Ok(x | y),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool};
-    BitXor, |x: Self, y: Self| Ok(x ^ y),
+    BitXor, |x, y| Ok(x ^ y),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool}
 );
 
@@ -49,17 +50,19 @@ impl_bin_op!(
 /// Implements [`BinOp`] for any type implementing the corresponding Rust
 /// primitive trait for the assignment operation.
 macro_rules! impl_bin_op_assign {
-    ($($op:ident, $fn_lhs:expr, $fn_rhs:expr, { $($type:ty),* });*) => {
+    ($($op:ident, |$var_lhs_x:ident, $var_lhs_y:ident| $fn_lhs:expr, |$var_rhs_x:ident, $var_rhs_y:ident| $fn_rhs:expr, { $($type:ty),* });*) => {
         $($(
             impl BinOpAssign<$op> for $type {
                 type Err = ();
 
                 fn bin_op_assign_lhs(&mut self, rhs: &Self) -> Result<(), ()> {
-                    ($fn_lhs)(self, *rhs)
+                    let f = |$var_lhs_x: &mut Self, $var_lhs_y: Self| $fn_lhs;
+                    f(self, *rhs)
                 }
 
                 fn bin_op_assign_rhs(&self, rhs: &mut Self) -> Result<(), ()> {
-                    ($fn_rhs)(*self, rhs)
+                    let f = |$var_rhs_x: Self, $var_rhs_y: &mut Self| $fn_rhs;
+                    f(*self, rhs)
                 }
             }
         )*)*
@@ -67,24 +70,24 @@ macro_rules! impl_bin_op_assign {
 }
 
 impl_bin_op_assign!(
-    Add, |x: &mut Self, y: Self| Ok(*x = (*x).checked_add(y).ok_or(())?),
-         |x: Self, y: &mut Self| Ok(*y = x.checked_add(*y).ok_or(())?),
+    Add, |x, y| {*x = (*x).checked_add(y).ok_or(())?; Ok(())},
+         |x, y| {*y = x.checked_add(*y).ok_or(())?; Ok(())},
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    Add, |x: &mut Self, y: Self| Ok(*x += y), |x: Self, y: &mut Self| Ok(*y += x),
+    Add, |x, y| {*x += y; Ok(())}, |x, y| {*y += x; Ok(())},
         {f32, f64};
-    Sub, |x: &mut Self, y: Self| Ok(*x = (*x).checked_sub(y).ok_or(())?),
-         |x: Self, y: &mut Self| Ok(*y = x.checked_sub(*y).ok_or(())?),
+    Sub, |x, y| {*x = (*x).checked_sub(y).ok_or(())?; Ok(())},
+         |x, y| {*y = x.checked_sub(*y).ok_or(())?; Ok(())},
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    Sub, |x: &mut Self, y: Self| Ok(*x -= y), |x: Self, y: &mut Self| Ok(*y = x - *y),
+    Sub, |x, y| {*x -= y; Ok(())}, |x, y| {*y = x - *y; Ok(())},
         {f32, f64};
-    Mul, |x: &mut Self, y: Self| Ok(*x = (*x).checked_mul(y).ok_or(())?),
-         |x: Self, y: &mut Self| Ok(*y = x.checked_mul(*y).ok_or(())?),
+    Mul, |x, y| {*x = (*x).checked_mul(y).ok_or(())?; Ok(())},
+         |x, y| {*y = x.checked_mul(*y).ok_or(())?; Ok(())},
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    Mul, |x: &mut Self, y: Self| Ok(*x *= y), |x: Self, y: &mut Self| Ok(*y *= x),
+    Mul, |x, y| {*x *= y; Ok(())}, |x, y| {*y *= x; Ok(())},
         {f32, f64};
-    Div, |x: &mut Self, y: Self| Ok(*x = (*x).checked_div(y).ok_or(())?),
-         |x: Self, y: &mut Self| Ok(*y = x.checked_div(*y).ok_or(())?),
+    Div, |x, y| {*x = (*x).checked_div(y).ok_or(())?; Ok(())},
+         |x, y| {*y = x.checked_div(*y).ok_or(())?; Ok(())},
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
-    Div, |x: &mut Self, y: Self| Ok(*x /= y), |x: Self, y: &mut Self| Ok(*y = x / *y),
+    Div, |x, y| {*x /= y; Ok(())}, |x, y| {*y = x / *y; Ok(())},
         {f32, f64}
 );
