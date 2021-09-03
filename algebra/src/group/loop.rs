@@ -4,8 +4,6 @@ use crate::ops::BinOpMarker;
 /// A [loop](https://en.wikipedia.org/wiki/Quasigroup#Loops) is both [`Unital`]
 /// and a [`Quasigroup`].
 pub trait Loop<Op: BinOpMarker>: Unital<Op> + Quasigroup<Op> {
-    // todo: make the inverse a unary operator
-
     /// Returns the left inverse of a value.
     fn left_inv(&self) -> Self {
         Self::id().right_div(self)

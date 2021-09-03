@@ -1,5 +1,5 @@
 use super::{Associative, Commutative, PowAssociative, Unital};
-use crate::{naturals::Naturals, ops::BinOpMarker};
+use crate::{numbers::Naturals, ops::BinOpMarker};
 
 /// A [`Unital`] and [`PowAssociative`] structure.
 pub trait UnitalPowAssociative<Op: BinOpMarker>: Unital<Op> + PowAssociative<Op> {

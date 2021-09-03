@@ -2,9 +2,12 @@
 
 pub mod impls;
 
-use super::{unreachable, OpMarker};
-use macros::*;
+use core::fmt::Debug;
 use std::marker::PhantomData;
+
+use super::OpMarker;
+use crate::unwrap_unchecked;
+use macros::*;
 
 /// A trait representing type markers for arbitrary binary operations. This
 /// trait allows us to define multiple operations on the same types.
@@ -36,16 +39,17 @@ decl_bin_op_marker!(Shr, "A type marker for right bit shift.");
 /// types. This is where such binary operation is actually defined.
 ///
 /// # Safety
-/// There's **no guarantee** that this function won't invoke undefined behavior.
-/// As such, this method should never be directly called, unless when
+/// There's **no guarantee** that these functions won't invoke undefined
+/// behavior. As such, this method should never be directly called, unless when
 /// interfacing with a trait that makes stronger assertions about the behavior
 /// of this function.
+// todo: rename as partial magma?
 pub trait BinOp<Op: BinOpMarker, Rhs = Self> {
     /// The output of the binary operation.
     type Output;
 
     /// The error type of the checked method.
-    type Err;
+    type Err: Debug;
 
     /// Applies a binary operation on `self` and `rhs`.
     fn bin_op(&self, rhs: &Rhs) -> Result<Self::Output, Self::Err>;
@@ -56,7 +60,7 @@ pub trait BinOp<Op: BinOpMarker, Rhs = Self> {
     /// # Safety
     /// If [`bin_op`] returns an error, this function is undefined behavior.
     unsafe fn bin_op_unchecked(&self, rhs: &Rhs) -> Self::Output {
-        self.bin_op(rhs).unwrap_or_else(|_| unreachable())
+        unwrap_unchecked(self.bin_op(rhs))
     }
 }
 
@@ -65,13 +69,13 @@ pub trait BinOp<Op: BinOpMarker, Rhs = Self> {
 /// actually defined.
 ///
 /// # Safety
-/// There's **no guarantee** that this function won't invoke undefined behavior.
-/// As such, this method should never be directly called, unless when
+/// There's **no guarantee** that these functions won't invoke undefined
+/// behavior. As such, this method should never be directly called, unless when
 /// interfacing with a trait that makes stronger assertions about the behavior
 /// of this function.
 pub trait BinOpAssign<Op: BinOpMarker, Rhs = Self> {
     /// The error type of the checked method.
-    type Err;
+    type Err: Debug;
 
     /// Applies a binary operation on `self` and `rhs`, assigns it to `self`.
     fn bin_op_assign_lhs(&mut self, rhs: &Rhs) -> Result<(), Self::Err>;
@@ -86,8 +90,7 @@ pub trait BinOpAssign<Op: BinOpMarker, Rhs = Self> {
     /// If [`bin_op_assign_lhs`] returns an error, this function is undefined
     /// behavior.
     unsafe fn bin_op_assign_lhs_unchecked(&mut self, rhs: &Rhs) {
-        self.bin_op_assign_lhs(rhs)
-            .unwrap_or_else(|_| unreachable())
+        unwrap_unchecked(self.bin_op_assign_lhs(rhs))
     }
 
     /// Applies a binary operation on `self` and `rhs`, assigns it to `rhs`.
@@ -97,9 +100,26 @@ pub trait BinOpAssign<Op: BinOpMarker, Rhs = Self> {
     /// If [`bin_op_assign_rhs`] returns an error, this function is undefined
     /// behavior.
     unsafe fn bin_op_assign_rhs_unchecked(&self, rhs: &mut Rhs) {
-        self.bin_op_assign_rhs(rhs)
-            .unwrap_or_else(|_| unreachable())
+        unwrap_unchecked(self.bin_op_assign_rhs(rhs))
     }
+}
+
+/// A trait that specifies that a given binary operation may be applied to two
+/// values of the same type, and possibly assigned to either.
+///
+/// # Safety
+/// There's **no guarantee** that these functions won't invoke undefined
+/// behavior. As such, this method should never be directly called, unless when
+/// interfacing with a trait that makes stronger assertions about the behavior
+/// of this function.
+pub trait BinOpSet<Op: BinOpMarker>:
+    Sized + BinOp<Op, Self, Output = Self> + BinOpAssign<Op, Self>
+{
+}
+
+impl<Op: BinOpMarker, T: Sized + BinOp<Op, Self, Output = Self> + BinOpAssign<Op, Self>>
+    BinOpSet<Op> for T
+{
 }
 
 /// Represents a "backwards" operator, so that `a op b = b Bws(op) a`.
@@ -128,6 +148,3 @@ impl<Op: BinOpMarker, Lhs, Rhs: BinOp<Op, Lhs>> BinOpAssign<Bws<Op>, Rhs> for Lh
         rhs.bin_op_assign_lhs(self)
     }
 }
-
-pub type BwsSub = Bws<Sub>;
-pub type BwsDiv = Bws<Div>;

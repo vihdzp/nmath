@@ -1,6 +1,7 @@
 use super::*;
 use crate::ops::*;
 
+/// Implements the [`Magma<Op>`] trait for an operation and type.
 macro_rules! impl_magma {
     ($($type:ty : $($op:ty),*);*) => {
         $($(

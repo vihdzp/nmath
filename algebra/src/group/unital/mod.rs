@@ -1,5 +1,7 @@
 //! Contains the traits for left-unital, right-unital, and unital magmas.
 
+pub mod impls;
+
 use super::Magma;
 use crate::ops::BinOpMarker;
 

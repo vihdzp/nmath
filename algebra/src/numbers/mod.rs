@@ -1,3 +1,3 @@
-//! Implements traits for different numerical types.
+mod naturals;
 
-pub mod naturals;
+pub use naturals::*;

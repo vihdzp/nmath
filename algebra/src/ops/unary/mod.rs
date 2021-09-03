@@ -1,8 +1,9 @@
 mod impls;
 
-pub use impls::*;
+use core::fmt::Debug;
 
-use super::{unreachable, OpMarker};
+use super::OpMarker;
+use crate::unwrap_unchecked;
 use macros::*;
 
 /// A trait representing type markers for arbitrary unary operations. This trait
@@ -32,12 +33,12 @@ decl_un_op_marker!(Not, "A type marker for logical negation.");
 /// As such, this method should never be directly called, unless when
 /// interfacing with a trait that makes stronger assertions about the behavior
 /// of this function.
-trait UnOp<Op: UnOpMarker> {
+pub trait UnOp<Op: UnOpMarker> {
     /// The output of the unary operation.
     type Output;
 
     /// The error type of the checked method.
-    type Err;
+    type Err: Debug;
 
     /// Applies a unary operation on `self`.
     fn un_op(&self) -> Result<Self::Output, Self::Err>;
@@ -48,7 +49,7 @@ trait UnOp<Op: UnOpMarker> {
     /// # Safety
     /// If [`un_op`] returns an error, this function is undefined behavior.
     unsafe fn un_op_unchecked(&self) -> Self::Output {
-        self.un_op().unwrap_or_else(|_| unreachable())
+        unwrap_unchecked(self.un_op())
     }
 }
 
@@ -56,7 +57,7 @@ trait UnOp<Op: UnOpMarker> {
 /// and assigned to it.
 pub trait UnOpAssign<Op: UnOpMarker, Rhs = Self> {
     /// The error type of the checked method.
-    type Err;
+    type Err: Debug;
 
     /// Applies a unary operation on `self` and assigns the result.
     fn un_op_assign(&mut self) -> Result<(), Self::Err>;
@@ -67,6 +68,19 @@ pub trait UnOpAssign<Op: UnOpMarker, Rhs = Self> {
     /// If [`un_op_assign`] returns an error, this function is undefined
     /// behavior.
     unsafe fn un_op_assign_unchecked(&mut self) {
-        self.un_op_assign().unwrap_or_else(|_| unreachable())
+        unwrap_unchecked(self.un_op_assign())
     }
 }
+
+/// A trait that specifies that a given unary operation may be applied to a
+/// value of some type, and possibly assigned to it.
+///
+/// # Safety
+/// There's **no guarantee** that these functions won't invoke undefined
+/// behavior. As such, this method should never be directly called, unless when
+/// interfacing with a trait that makes stronger assertions about the behavior
+/// of this function.
+// TODO: rename as partial endomorphism?
+pub trait UnOpSet<Op: UnOpMarker>: Sized + UnOp<Op, Output = Self> + UnOpAssign<Op> {}
+
+impl<Op: UnOpMarker, T: Sized + UnOp<Op, Output = Self> + UnOpAssign<Op>> UnOpSet<Op> for T {}

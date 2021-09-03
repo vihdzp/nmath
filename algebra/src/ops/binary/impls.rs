@@ -36,6 +36,8 @@ impl_bin_op!(
         {f32, f64};
     Rem, |x, y| x.checked_rem(y).ok_or(()),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128};
+    Rem, |x, y| Ok(x % y),
+        {f32, f64};
     BitAnd, |x, y| Ok(x & y),
         {u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool};
     BitOr, |x, y| Ok(x | y),
@@ -47,8 +49,7 @@ impl_bin_op!(
 // todo: figure out how to handle different types.
 // todo: Shl, Shr.
 
-/// Implements [`BinOp`] for any type implementing the corresponding Rust
-/// primitive trait for the assignment operation.
+/// Implements `BinOpAssign<op>` for a given operation.
 macro_rules! impl_bin_op_assign {
     ($($op:ident, |$var_lhs_x:ident, $var_lhs_y:ident| $fn_lhs:expr, |$var_rhs_x:ident, $var_rhs_y:ident| $fn_rhs:expr, { $($type:ty),* });*) => {
         $($(

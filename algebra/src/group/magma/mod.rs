@@ -1,22 +1,17 @@
 pub mod impls;
 
-use crate::{
-    ops::{BinOp, BinOpMarker},
-    BinOpAssign, Bws,
-};
+use crate::{BinOpMarker, BinOpSet, Bws};
 
 /// Mathematically, a [magma](https://en.wikipedia.org/wiki/Magma_(algebra)) is
 /// a set together with a closed binary operation. No further restrictions are
 /// imposed.
 ///
 /// # Safety
-/// In contrast to [`BinOp`], we require that a magma **does not invoke UB**
+/// In contrast to [`BinOpSet`], we require that a magma **does not invoke UB**
 /// under any "normal" circumstances. The implementor is free to choose whatever
 /// a "normal" circumstance means, but they must be aware of the consequences it
 /// entails.
-pub trait Magma<Op: BinOpMarker>:
-    Sized + BinOp<Op, Self, Output = Self> + BinOpAssign<Op, Self>
-{
+pub trait Magma<Op: BinOpMarker>: BinOpSet<Op> {
     /// Applies a binary operation on two values.
     ///
     /// On non-copy types, this will often create a new buffer.

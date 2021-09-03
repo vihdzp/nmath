@@ -1,7 +1,13 @@
 //! Implements the appropriate semigroup traits for all primitives.
 
-use crate::impl_associativity;
 use crate::ops::{Add, Mul};
+
+/// Implements [`PowAssociative`] for a type.
+macro_rules! impl_associativity {
+    ($op:ty: $type:ty) => {
+        impl crate::PowAssociative<$op> for $type {}
+    };
+}
 
 /// Implements the semigroup trait under addition and multiplication for a
 /// primitive.
