@@ -1,6 +1,6 @@
 use std::{
     iter::{self, FromIterator},
-    ops::{Index, IndexMut},
+    ops::Index,
 };
 
 use crate::storage::{
@@ -57,12 +57,6 @@ impl<S: Storage<Inner = usize>> Index<usize> for Permutation<S> {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
-    }
-}
-
-impl<S: StorageMut<Inner = usize>> IndexMut<usize> for Permutation<S> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.0[index]
     }
 }
 

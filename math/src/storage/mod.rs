@@ -116,8 +116,6 @@ pub trait ContiguousStorageMut: StorageMut + ContiguousStorage + BorrowMut<[Self
 
 impl<T: StorageMut + BorrowMut<[Self::Inner]>> ContiguousStorageMut for T {}
 
-
-
 /// A storage that owns its data. We certify that this is the case by requiring
 /// the implementation of [`FromIterator`] and [`IntoIterator`].
 ///
