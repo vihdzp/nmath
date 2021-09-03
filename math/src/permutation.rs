@@ -1,6 +1,6 @@
 use std::{
     iter::{self, FromIterator},
-    ops::Index,
+    ops::{Index, Mul},
 };
 
 use crate::storage::{
@@ -38,6 +38,7 @@ impl Parity {
 /// entries must be numbers from 0 to the length of the permutation minus 1,
 /// all pairwise different.
 #[repr(transparent)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Permutation<S: Storage<Inner = usize>>(S);
 
 /// A statically-sized permutation, backed by an [`ArrayStorage`].
@@ -78,6 +79,11 @@ impl<S: Storage<Inner = usize>> Permutation<S> {
         self.0.len()
     }
 
+    /// Returns whether the permutation is empty.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// Returns the size of the permutation.
     pub fn size(&self) -> Size<S> {
         self.0.size()
@@ -114,6 +120,34 @@ impl<S: StorageMut<Inner = usize>> Permutation<S> {
 }
 
 impl<S: OwnedStorage<Inner = usize>> Permutation<S> {
+    /// Initializes a new permutation. No invariants are checked.
+    ///
+    /// # Safety
+    /// All entries of the permutation must be pairwise distinct integers, all
+    /// less than the length of the permutation.
+    pub unsafe fn new_unchecked(s: S) -> Self {
+        Self(s)
+    }
+
+    /// Initializes a new permutation. Will check that the entries are valid. To
+    /// forgo this expensive check, use [`new_unchecked`].
+    pub fn new(s: S) -> Option<Self> {
+        // We check that there are no repeat entries, nor entries out of bounds.
+        let mut checked = vec![false; s.len()];
+        for &v in s.iter() {
+            let entry = checked.get_mut(v)?;
+
+            if *entry {
+                return None;
+            }
+
+            *entry = true;
+        }
+
+        // Safety: we literally just checked the invariants!
+        unsafe { Some(Self::new_unchecked(s)) }
+    }
+
     /// Returns the identity permutation.
     pub fn identity(size: Size<S>) -> Self {
         (0..size.value()).collect()
@@ -144,12 +178,56 @@ impl<S: OwnedStorage<Inner = usize>> Permutation<S> {
                     len += 1;
                 }
 
-                if len % 2 == 1 {
+                if len % 2 == 0 {
                     parity.flip_mut();
                 }
             }
         }
 
         parity
+    }
+}
+
+impl<S: OwnedStorage<Inner = usize>> Mul for Permutation<S> {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        &self * &rhs
+    }
+}
+
+impl<'a, S: OwnedStorage<Inner = usize>> Mul<&'a Self> for Permutation<S> {
+    type Output = Self;
+
+    fn mul(self, rhs: &'a Self) -> Self::Output {
+        &self * rhs
+    }
+}
+
+impl<'a, S: OwnedStorage<Inner = usize>> Mul<Permutation<S>> for &'a Permutation<S> {
+    type Output = Permutation<S>;
+
+    fn mul(self, rhs: Permutation<S>) -> Self::Output {
+        self * &rhs
+    }
+}
+
+impl<'a, 'b, S: OwnedStorage<Inner = usize>> Mul<&'b Permutation<S>> for &'a Permutation<S> {
+    type Output = Permutation<S>;
+
+    fn mul(self, rhs: &'b Permutation<S>) -> Self::Output {
+        Permutation::compose(self, rhs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compose() {
+        let p = PermutationS::new([0, 2, 1, 3].into()).unwrap();
+        assert_eq!(p.parity(), Parity::Odd);
+        assert_eq!(p * &p, PermutationS::identity(Default::default()));
     }
 }

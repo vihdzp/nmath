@@ -303,6 +303,14 @@ where
     }
 }
 
+impl<T, const N: usize> From<[T; N]> for ArrayStorageE<T, N> {
+    fn from(array: [T; N]) -> Self {
+        // Safety: both types have the same layout and alignment. Also, we avoid
+        // double-frees.
+        unsafe { mem::transmute_copy(&ManuallyDrop::new(array)) }
+    }
+}
+
 impl<S: StackStorage, const N: usize> Borrow<[S::Inner]> for ArrayStorage<S, N> {
     fn borrow(&self) -> &[S::Inner] {
         self._borrow()

@@ -32,6 +32,11 @@ pub trait Storage: Index<usize, Output = Self::Inner> {
     /// Returns the length of the storage.
     fn len(&self) -> usize;
 
+    /// Returns whether the storage is empty.
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Returns the size of the storage.
     fn size(&self) -> Size<Self> {
         Size::from_usize(self.len())
@@ -141,13 +146,19 @@ pub struct UninitStackStorage<S: StackStorage> {
     len: usize,
 }
 
-impl<S: StackStorage> UninitStackStorage<S> {
-    /// Builds a new uninitialized stack storage.
-    pub fn new() -> Self {
+impl<S: StackStorage> Default for UninitStackStorage<S> {
+    fn default() -> Self {
         Self {
             storage: MaybeUninit::uninit(),
             len: 0,
         }
+    }
+}
+
+impl<S: StackStorage> UninitStackStorage<S> {
+    /// Builds a new uninitialized stack storage.
+    pub fn new() -> Self {
+        Default::default()
     }
 
     /// Returns a pointer to the inner storage.
@@ -163,7 +174,7 @@ impl<S: StackStorage> UninitStackStorage<S> {
         if self.len < S::SIZE_U {
             // Safety: this must be in bounds.
             unsafe {
-                self.ptr_mut().offset(self.len as isize).write(value);
+                self.ptr_mut().add(self.len).write(value);
             }
         } else {
             panic!("stack storage full")
